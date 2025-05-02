@@ -32,7 +32,7 @@ esearch -db nucleotide -query 'txid2509511[Organism:exp] AND "complete genome"[T
 output: strains.tsv
 ## 2. ORF10 MSA Pipeline
 
-**Script:** `OR10_MSA.py`  
+**Script:** `OR10_MSA.sh`  
 - Extracts ORF10 from the Wuhan-Hu-1 reference genome.
 - Uses `blastn` to identify homologs in all genomes.
 - Extracts ORF10 hits using `bedtools` and aligns them with MAFFT.
@@ -41,7 +41,7 @@ Output: `results/ORF10_aligned.fasta`
 
 ## 3. Whole Genome Phylogeny Pipeline
 
-**Script:** `WholeGenomeTree.py`  
+**Script:** `WholeGenomeTree.sh`  
 - Aligns all genomes using MAFFT.
 - Filters poorly aligned regions with `trimAl`.
 - Builds a bootstrapped maximum likelihood tree using `IQ-TREE` (`MFP`, SH-aLRT, and UFBoot).
@@ -51,7 +51,7 @@ Output: `results/genomes_tree_rooted.nwk`
 
 ## 4. Tree + ORF10 Visualization
 
-**Script:** `Plot.py`  
+**Script:** `Plot.r`  
 - Visualizes the rooted tree alongside the ORF10 MSA.
 - Annotates clades as SARS-CoV-1-like and SARS-CoV-2-like (Colors branches) using node-based MRCA detection.
 - Overlays bootstrap support.
