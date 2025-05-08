@@ -32,7 +32,7 @@ esearch -db nucleotide -query 'txid2509511[Organism:exp] AND "complete genome"[T
 output: strains.tsv
 ## 2. ORF10 MSA Pipeline
 
-**Script:** `OR10_MSA.sh`  
+**Script:** `ORF10_MSA.sh`  
 - Extracts ORF10 from the Wuhan-Hu-1 reference genome.
 - Uses `blastn` to identify homologs in all genomes.
 - Extracts ORF10 hits using `bedtools` and aligns them with MAFFT.
