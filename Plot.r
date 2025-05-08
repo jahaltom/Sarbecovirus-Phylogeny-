@@ -255,8 +255,7 @@ p_tree <- p_tree +
     size = 3,
     family = "mono",inherit.aes = FALSE
   ) +
-  geom_treescale(x = 1, y = 1, width = 0.05, fontsize = 3, linesize = 0.5) +
-
+ 
   scale_color_identity() +
   xlim(0, max(long_df$Position) + 5) +
   theme_minimal(base_size = 12) +
