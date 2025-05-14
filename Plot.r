@@ -164,7 +164,7 @@ long_df$Highlight <- ifelse(long_df$Taxa %in% highlight_taxa, TRUE, FALSE)
 
 # Final plot
 p_tree <- p_tree +
-  geom_text2(aes(subset = (!isTip) & (!is.na(display_label)), label = display_label, x = x -1 , y = y + 0.4), hjust = 0, size = 2.5) +
+  geom_text2(aes(subset = (!isTip) & (!is.na(display_label)), label = display_label, x = x -1.1 , y = y + 0.4), hjust = 0, size = 2.5) +
   geom_rect(data = subset(tip_y, Taxa %in% highlight_taxa), aes(ymin = y - 0.5, ymax = y + 0.5, xmin = 0, xmax = max(long_df$Position) + 5), fill = "yellow", alpha = 0.3, inherit.aes = FALSE) +
   geom_tiplab(size = 3) +
   geom_tile(data = tip_y, aes(x = group_bar_offset, y = y, fill = Group), width = 1, height = 1, inherit.aes = FALSE) +
