@@ -59,7 +59,7 @@ Output: `results/genomes_tree_rooted.nwk`
 - Adaptive layout: Dynamically offsets the tree, metadata, and alignment panels to prevent label collision and maintain visual clarity.
 - Proportional branch scale: Includes a labeled substitution scale (e.g., “0.02 substitutions/site”) with root branch adjusted to avoid artificial elongation.
 
-Output: `ORF10_tree_MSA_group_date_codon_legend_clean_FINAL_BOOTSTRAP_FIXED.pdf`
+Output: `ORF10_tree_MSA.png`
 
 ---
 
