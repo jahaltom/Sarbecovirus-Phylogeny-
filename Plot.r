@@ -231,7 +231,7 @@ p_tree <- p_tree +
   )
 
 # Save output
-ggsave("ORF10_tree_MSA_group_date_codon_legend_clean_FIXED.pdf",
+ggsave("ORF10_tree_MSA.png",
        plot = p_tree, width = 49, height = 32)
 cat("✅ Tree figure saved\n")
 
