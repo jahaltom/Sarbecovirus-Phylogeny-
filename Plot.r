@@ -9,21 +9,25 @@ for (pkg in libs) {
 tree <- read.tree("genomes_tree_rooted.nwk")
 aligned <- readDNAStringSet("ORF10_aligned.fasta")
 
-# Extract SH-aLRT and Bootstrap values
-if (!is.null(tree$node.label)) {
-  sh_alrt_support <- as.numeric(sub("/.*", "", tree$node.label))
-  bootstrap_support <- as.numeric(sub(".*/", "", tree$node.label))
-} else {
-  stop("Tree does not contain bootstrap values!")
-}
+# Extract SH-aLRT and Bootstrap values from node labels
+sh_alrt_support <- as.numeric(sub("/.*", "", tree$node.label))
+bootstrap_support <- as.numeric(sub(".*/", "", tree$node.label))
 
-# Collapse weak nodes
+# Store node numbers before collapsing
+original_node_nums <- (length(tree$tip.label) + 1):(length(tree$tip.label) + length(tree$node.label))
+node_map <- data.frame(node = original_node_nums,
+                       bootstrap = bootstrap_support,
+                       shalrt = sh_alrt_support,
+                       stringsAsFactors = FALSE)
+
+# Collapse weak nodes if both supports are valid and below thresholds
 collapse_threshold_bootstrap <- 95
 collapse_threshold_shalrt <- 95
-weak_nodes <- which(bootstrap_support < collapse_threshold_bootstrap | sh_alrt_support < collapse_threshold_shalrt)
-if (length(weak_nodes) > 0) {
-  for (node in weak_nodes) {
-    edge_idx <- which(tree$edge[,1] == node + length(tree$tip.label))
+for (i in seq_len(nrow(node_map))) {
+  if (!is.na(node_map$bootstrap[i]) && !is.na(node_map$shalrt[i]) &&
+      node_map$bootstrap[i] < collapse_threshold_bootstrap &&
+      node_map$shalrt[i] < collapse_threshold_shalrt) {
+    edge_idx <- which(tree$edge[,1] == node_map$node[i])
     if (length(edge_idx) > 0) {
       tree$edge.length[edge_idx] <- 0
     }
@@ -38,13 +42,20 @@ max_len <- max(tree$edge.length)
 short_branch_threshold <- max_len * 0.001
 tree$edge.length[tree$edge.length < short_branch_threshold] <- 0
 
-# Store cleaned node labels
-real_node_label <- ifelse(
-  (bootstrap_support >= collapse_threshold_bootstrap | sh_alrt_support >= collapse_threshold_shalrt),
-  bootstrap_support,
-  NA
-)
-tree$node.label <- real_node_label
+# Remap node labels using edge splits
+require(phangorn)
+original_splits <- prop.part(read.tree("genomes_tree_rooted.nwk"))
+current_splits <- prop.part(tree)
+matched_labels <- rep(NA, length(current_splits))
+for (i in seq_along(current_splits)) {
+  for (j in seq_along(original_splits)) {
+    if (setequal(current_splits[[i]], original_splits[[j]])) {
+      matched_labels[i] <- bootstrap_support[j]
+      break
+    }
+  }
+}
+tree$node.label <- matched_labels
 
 # Clean FASTA headers
 names(aligned) <- sub(" .*", "", names(aligned))
@@ -61,16 +72,17 @@ matched_taxa <- intersect(tree$tip.label, names(aligned))
 tree <- keep.tip(tree, matched_taxa)
 aligned <- aligned[matched_taxa][match(tree$tip.label, names(aligned))]
 
-# Ladderize and scale tree
+# Ladderize and rescale tree
 tree <- ladderize(tree, right = FALSE)
 tree$edge.length <- tree$edge.length * 100
-tree$edge.length[which(tree$edge[,1] == length(tree$tip.label) + 1)] <- tree$edge.length[which(tree$edge[,1] == length(tree$tip.label) + 1)] / 50
+root_node <- length(tree$tip.label) + 1
+tree$edge.length[which(tree$edge[,1] == root_node)] <- tree$edge.length[which(tree$edge[,1] == root_node)] / 50
 
-# Convert to treedata and plot
+# Convert to treedata and initialize plot
 tree <- as.treedata(tree)
-p_tree <- ggtree(tree, size=1)
+p_tree <- ggtree(tree, size = 1)
 
-# Group SARS clades
+# Group clades
 node_sarscov1 <- MRCA(tree, c("NC_004718.3", "OK017831.1"))
 node_sarscov2 <- MRCA(tree, c("NC_045512.2", "OL674081.1"))
 p_tree <- groupClade(p_tree, .node = node_sarscov2, group_name = "SARS-CoV-2-like")
@@ -87,7 +99,7 @@ p_tree$data$group_color <- ifelse(
 )
 p_tree <- p_tree + aes(color = group_color) + scale_color_identity()
 
-# Add support labels only to non-collapsed nodes
+# Add support labels only to non-collapsed branches
 p_tree$data$display_label <- NA
 internal_nodes <- which(!p_tree$data$isTip)
 for (i in internal_nodes) {
@@ -116,15 +128,8 @@ df$Position <- 1:nrow(df)
 long_df <- reshape2::melt(df, id.vars = "Position", variable.name = "Taxa", value.name = "Base")
 long_df <- merge(long_df, tip_y, by = "Taxa")
 
-# Offset positions
-tree_max_x <- max(p_tree$data$x, na.rm = TRUE) + 8
-group_bar_offset <- tree_max_x
-isolate_bar_offset <- tree_max_x + 5
-host_bar_offset <- tree_max_x + 13
-date_bar_offset <- tree_max_x + 20
-location_bar_offset <- tree_max_x + 27
-alignment_start <- tree_max_x + 30
-long_df$Position <- long_df$Position + alignment_start
+
+
 
 # Codon detection
 stop_codons <- c("TAA", "TAG", "TGA")
@@ -138,9 +143,9 @@ for (seqname in names(aligned)) {
   ungapped <- gsub("-", "", seq)
   if (nchar(ungapped) < 3) next
   codons <- substring(ungapped, seq(1, nchar(ungapped) - 2, 3), seq(3, nchar(ungapped), 3))
-  stop_count <- sum(codons %in% stop_codons)
-  last_codon <- tail(codons, 1)
-  if (stop_count == 1 && last_codon %in% stop_codons) highlight_taxa <- c(highlight_taxa, seqname)
+  if (sum(codons %in% stop_codons) == 1 && tail(codons, 1) %in% stop_codons) {
+    highlight_taxa <- c(highlight_taxa, seqname)
+  }
   pos_map <- which(strsplit(seq, "")[[1]] != "-")
   startCount <- 0
   for (i in seq_along(codons)) {
@@ -157,18 +162,49 @@ for (seqname in names(aligned)) {
   }
 }
 
+# Merge codons and metadata
 codon_df <- rbind(stop_df, start_df)
 codon_df <- merge(codon_df, tip_y[, c("Taxa", "y")], by = "Taxa")
-codon_df$Position <- codon_df$Position + alignment_start
-long_df$Highlight <- ifelse(long_df$Taxa %in% highlight_taxa, TRUE, FALSE)
 
-# Final plot
+
+
+
+
+# Set offsets
+tree_max_x <- max(p_tree$data$x, na.rm = TRUE) + 8
+group_bar_offset <- tree_max_x
+isolate_bar_offset <- group_bar_offset + 5
+host_bar_offset <- isolate_bar_offset + 8
+date_bar_offset <- host_bar_offset + 7
+location_bar_offset <- date_bar_offset + 7
+alignment_start <- location_bar_offset + 7
+long_df$Position <- long_df$Position + alignment_start
+codon_df$Position <- codon_df$Position + alignment_start
+
+
+
+
+
+
+
+
+# Final plot 
 p_tree <- p_tree +
-  geom_text2(aes(subset = (!isTip) & (!is.na(display_label)), label = display_label, x = x -1.1 , y = y + 0.4), hjust = 0, size = 2.5) +
-  geom_rect(data = subset(tip_y, Taxa %in% highlight_taxa), aes(ymin = y - 0.5, ymax = y + 0.5, xmin = 0, xmax = max(long_df$Position) + 5), fill = "yellow", alpha = 0.3, inherit.aes = FALSE) +
+  geom_text2(aes(subset = (!isTip) & (!is.na(display_label)), label = display_label,
+                 x = x - 1.1 , y = y + 0.4), hjust = 0, size = 2.5) +
   geom_tiplab(size = 3) +
-  geom_tile(data = tip_y, aes(x = group_bar_offset, y = y, fill = Group), width = 1, height = 1, inherit.aes = FALSE) +
-  scale_fill_manual(name = "Group", values = c("SARS-CoV" = "green", "SARS-CoV-2" = "#f1c232", "Other Sarbecovirus strains" = "grey", "Sarbecovirus Outgroup (MERS)" = "#8c564b")) +
+  geom_tile(data = tip_y, aes(x = group_bar_offset, y = y, fill = Group),
+            width = 1, height = 1, inherit.aes = FALSE) +
+  scale_fill_manual(name = "Group", values = c(
+    "SARS-CoV" = "green",
+    "SARS-CoV-2" = "#f1c232",
+    "Other Sarbecovirus strains" = "grey",
+    "Sarbecovirus Outgroup (MERS)" = "#8c564b"
+  )) +
+  
+  
+  
+  geom_rect(data = subset(tip_y, Taxa %in% highlight_taxa), aes(ymin = y - 0.5, ymax = y + 0.5, xmin = 0, xmax = max(long_df$Position) + 5), fill = "yellow", alpha = 0.3, inherit.aes = FALSE) +
   ggnewscale::new_scale_fill() +
   geom_tile(data = codon_df, aes(x = Position, y = y, fill = CodonType), width = 1, height = 1, inherit.aes = FALSE) +
   scale_fill_manual(name = "Codon Type", values = c("Stop Codon" = "#fcaeae", "Start Codon" = "#4169e1")) +
@@ -177,22 +213,25 @@ p_tree <- p_tree +
   geom_text(data = tip_y, aes(x = date_bar_offset, y = y, label = Date), size = 2.5, inherit.aes = FALSE) +
   geom_text(data = tip_y, aes(x = location_bar_offset, y = y, label = Location), size = 2.5, inherit.aes = FALSE) +
   ggnewscale::new_scale_color() +
-  geom_text(data = long_df, aes(x = Position, y = y, label = Base, fontface = "bold", color = "black"), size = 3, family = "mono", inherit.aes = FALSE) +
-  geom_treescale(x = 5, y = 100, width = 2.0, label = "0.02 substitutions/site",linesize = 1) +
-  
-  scale_color_identity() +
+  geom_text(data = long_df, aes(x = Position, y = y, label = Base, color = "black"), size = 3, family = "mono", inherit.aes = FALSE) +
   xlim(0, max(long_df$Position) + 5) +
+  
+  geom_treescale(x = 5, y = 100, width = 2.0,
+                 label = "0.02 substitutions/site", linesize = 1) +
+  scale_color_identity() +
+  
+  
   theme_minimal(base_size = 12) +
   theme(
-    panel.background = element_rect(fill = "white"),
     axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
     panel.grid = element_blank(),
-    plot.margin = margin(20, 20, 20, 20),
-    legend.position = "right",
-    legend.box = "vertical"
+    panel.background = element_rect(fill = "white"),
+    legend.position = "right"
   )
 
 # Save output
-ggsave("ORF10_tree_MSA_group_date_codon_legend_clean_FINAL_BOOTSTRAP_FIXED.png", plot = p_tree, width = 49, height = 32)
-cat("\U00002705 PDF saved: ORF10_tree_MSA_group_date_codon_legend_clean_FINAL_BOOTSTRAP_FIXED.pdf\n")
+ggsave("ORF10_tree_MSA_group_date_codon_legend_clean_FIXED.pdf",
+       plot = p_tree, width = 49, height = 32)
+cat("✅ Tree figure saved\n")
+
