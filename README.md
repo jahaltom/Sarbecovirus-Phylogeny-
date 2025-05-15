@@ -44,7 +44,8 @@ Output: `results/ORF10_aligned.fasta`
 **Script:** `WholeGenomeTree.sh`  
 - Aligns all genomes using MAFFT.
 - Filters poorly aligned regions with `trimAl`.
-- Builds a bootstrapped maximum likelihood tree using `IQ-TREE` (`MFP`, SH-aLRT, and UFBoot).
+- Builds a bootstrapped maximum likelihood tree using `IQ-TREE` (`MFP`, SH-aLRT, and UFBoot). 1000 replicates each.
+- Collapse nodes where both ultrafast bootstrap (UFBoot) and SH-aLRT support are < 95%
 - Automatically roots the tree with `NC_019843.3` as outgroup using R/ape.
 
 Output: `results/genomes_tree_rooted.nwk`
