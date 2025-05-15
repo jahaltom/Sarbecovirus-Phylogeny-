@@ -32,6 +32,7 @@ iqtree -s results/genomes_aligned_trimmed.fasta \
        -bb 1000 \
        -alrt 1000 \
        -nt AUTO \
+       --collapse 95 \
        -pre results/genomes_iqtree
 
 # 7. Root the tree using R
