@@ -52,11 +52,12 @@ Output: `results/genomes_tree_rooted.nwk`
 ## 4. Tree + ORF10 Visualization
 
 **Script:** `Plot.r`  
-- Visualizes the rooted tree alongside the ORF10 MSA.
-- Annotates clades as SARS-CoV-1-like and SARS-CoV-2-like (Colors branches) using node-based MRCA detection.
-- Overlays bootstrap support.
-- Displays aligned codons, isolate metadata, and highlights terminal stop codons.
-- Dynamically offsets metadata and alignment positions.
+- Phylogenetic tree + MSA integration: Displays a rooted maximum likelihood tree alongside a multiple sequence alignment (MSA) of the ORF10 coding region.
+- Clade annotation by MRCA: Automatically detects SARS-CoV-1-like and SARS-CoV-2-like clades using node-based MRCA logic and assigns branch colors.
+- Support-aware and length-based node collapsing: Collapses internal nodes only if both SH-aLRT and bootstrap support values fall below user-defined thresholds (e.g., 95%), and also collapses branches with length below 0.1% of the maximum. Bootstrap values are accurately remapped to surviving nodes using bipartition (split) matching.
+- Codon-level and metadata tracks: Annotates each tip with isolate metadata (host, date, location, etc.) and aligned nucleotide codons, highlighting start/stop codons and shading sequences with complete in-frame ORFs.
+- Adaptive layout: Dynamically offsets the tree, metadata, and alignment panels to prevent label collision and maintain visual clarity.
+- Proportional branch scale: Includes a labeled substitution scale (e.g., “0.02 substitutions/site”) with root branch adjusted to avoid artificial elongation.
 
 Output: `ORF10_tree_MSA_group_date_codon_legend_clean_FINAL_BOOTSTRAP_FIXED.pdf`
 
