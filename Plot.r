@@ -89,17 +89,19 @@ p_tree <- groupClade(p_tree, .node = node_sarscov2, group_name = "SARS-CoV-2-lik
 p_tree <- groupClade(p_tree, .node = node_sarscov1, group_name = "SARS-CoV-1-like")
 node_sarscov2_1 <- MRCA(tree, c("OQ401247.1", "NC_014470.1"))
 node_sarscov2_2 <- MRCA(tree, c("LC556375.1", "LC663793.1"))
-p_tree <- groupClade(p_tree, .node = node_sarscov2_1, group_name = "SARS-CoV-2-like")
-p_tree <- groupClade(p_tree, .node = node_sarscov2_2, group_name = "SARS-CoV-2-like")
+p_tree <- groupClade(p_tree, .node = node_sarscov2_1, group_name = "SARS-CoV-2.1-like")
+p_tree <- groupClade(p_tree, .node = node_sarscov2_2, group_name = "SARS-CoV-2.2-like")
 
 
 # Assign colors
 p_tree$data$group <- NA
 p_tree$data$group[p_tree$data$`SARS-CoV-2-like` == 1] <- "SARS-CoV-2-like"
+p_tree$data$group[p_tree$data$`SARS-CoV-2.1-like` == 1] <- "SARS-CoV-2.1-like"
+p_tree$data$group[p_tree$data$`SARS-CoV-2.2-like` == 1] <- "SARS-CoV-2.2-like"
 p_tree$data$group[p_tree$data$`SARS-CoV-1-like` == 1] <- "SARS-CoV-1-like"
 p_tree$data$group[is.na(p_tree$data$group)] <- "default"
 p_tree$data$group_color <- ifelse(
-  p_tree$data$group == "SARS-CoV-2-like", "#B8860B",
+  p_tree$data$group %in% c("SARS-CoV-2-like", "SARS-CoV-2.1-like", "SARS-CoV-2.2-like"), "#B8860B",
   ifelse(p_tree$data$group == "SARS-CoV-1-like", "#228B22", "black")
 )
 p_tree <- p_tree + aes(color = group_color) + scale_color_identity()
