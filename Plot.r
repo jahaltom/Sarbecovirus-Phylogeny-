@@ -87,6 +87,11 @@ node_sarscov1 <- MRCA(tree, c("NC_004718.3", "OK017831.1"))
 node_sarscov2 <- MRCA(tree, c("NC_045512.2", "OL674081.1"))
 p_tree <- groupClade(p_tree, .node = node_sarscov2, group_name = "SARS-CoV-2-like")
 p_tree <- groupClade(p_tree, .node = node_sarscov1, group_name = "SARS-CoV-1-like")
+node_sarscov2_1 <- MRCA(tree, c("OQ401247.1", "NC_014470.1"))
+node_sarscov2_2 <- MRCA(tree, c("LC556375.1", "LC663793.1"))
+p_tree <- groupClade(p_tree, .node = node_sarscov2_1, group_name = "SARS-CoV-2-like")
+p_tree <- groupClade(p_tree, .node = node_sarscov2_2, group_name = "SARS-CoV-2-like")
+
 
 # Assign colors
 p_tree$data$group <- NA
